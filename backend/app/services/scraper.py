@@ -9,6 +9,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Blocked domains and IP ranges for security
+BLOCKED_DOMAINS = ['localhost', '127.0.0.1', '0.0.0.0']
+PRIVATE_IP_PREFIXES = ['10.', '172.16.', '172.17.', '172.18.', '172.19.', 
+                       '172.20.', '172.21.', '172.22.', '172.23.', '172.24.',
+                       '172.25.', '172.26.', '172.27.', '172.28.', '172.29.',
+                       '172.30.', '172.31.', '192.168.', '169.254.']
+
 
 class ScraperService:
     """Service for scraping web content."""
@@ -17,6 +24,41 @@ class ScraperService:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
+    
+    def _validate_url(self, url: str) -> bool:
+        """
+        Validate URL to prevent SSRF attacks.
+        
+        Args:
+            url: URL to validate
+            
+        Returns:
+            True if URL is safe, False otherwise
+        """
+        try:
+            parsed = urlparse(url)
+            
+            # Check scheme
+            if parsed.scheme not in ['http', 'https']:
+                logger.warning(f"Invalid URL scheme: {parsed.scheme}")
+                return False
+            
+            # Check for blocked domains
+            hostname = parsed.hostname or parsed.netloc.split(':')[0]
+            if hostname.lower() in BLOCKED_DOMAINS:
+                logger.warning(f"Blocked domain: {hostname}")
+                return False
+            
+            # Check for private IP ranges
+            for prefix in PRIVATE_IP_PREFIXES:
+                if hostname.startswith(prefix):
+                    logger.warning(f"Private IP address: {hostname}")
+                    return False
+            
+            return True
+        except Exception as e:
+            logger.error(f"URL validation error: {str(e)}")
+            return False
     
     def scrape_url(self, url: str, use_playwright: bool = False) -> Dict[str, Any]:
         """
@@ -29,6 +71,10 @@ class ScraperService:
         Returns:
             Dictionary with scraped content and metadata
         """
+        # Validate URL for security
+        if not self._validate_url(url):
+            raise ValueError(f"Invalid or blocked URL: {url}")
+        
         try:
             if use_playwright:
                 return self._scrape_with_playwright(url)
