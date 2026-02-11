@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "data_processor.py", line 10, in <module>
+    age = int(user_input)
+ValueError: invalid literal for int() with base 10: 'abc'
