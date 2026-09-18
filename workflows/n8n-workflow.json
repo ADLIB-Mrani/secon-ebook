@@ -1,0 +1,279 @@
+{
+  "name": "E-book Generation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ebook-trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "ebook-generation"
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/api/v1/ebook/create",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "author",
+              "value": "={{ $json.author }}"
+            },
+            {
+              "name": "format",
+              "value": "={{ $json.format }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-ebook",
+      "name": "Create E-book",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.urls }}",
+        "method": "GET",
+        "options": {}
+      },
+      "id": "fetch-urls",
+      "name": "Fetch URLs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/api/v1/ebook/={{ $('Create E-book').json.id }}/resources",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "url"
+            },
+            {
+              "name": "source",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            }
+          ]
+        }
+      },
+      "id": "add-resources",
+      "name": "Add Resources",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/api/v1/ebook/={{ $('Create E-book').json.id }}/generate",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "auto_extract",
+              "value": true
+            }
+          ]
+        }
+      },
+      "id": "generate-ebook",
+      "name": "Generate E-book",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "id": "wait",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/api/v1/ebook/={{ $('Create E-book').json.id }}/status",
+        "method": "GET"
+      },
+      "id": "check-status",
+      "name": "Check Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equals",
+              "value2": "SUCCESS"
+            }
+          ]
+        }
+      },
+      "id": "if-complete",
+      "name": "If Complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/api/v1/ebook/={{ $('Create E-book').json.id }}/download",
+        "method": "GET",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-ebook",
+      "name": "Download E-book",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1850, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create E-book",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create E-book": {
+      "main": [
+        [
+          {
+            "node": "Fetch URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch URLs": {
+      "main": [
+        [
+          {
+            "node": "Add Resources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Resources": {
+      "main": [
+        [
+          {
+            "node": "Generate E-book",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate E-book": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status": {
+      "main": [
+        [
+          {
+            "node": "If Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Complete": {
+      "main": [
+        [
+          {
+            "node": "Download E-book",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download E-book": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
