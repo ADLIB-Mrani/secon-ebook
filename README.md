@@ -13,6 +13,25 @@ Système complet de génération automatique d'e-books à partir de multiples so
 
 </div>
 
+## 🤖 Analyseur d'Erreurs de Programmation
+
+Un outil Python intelligent inclus dans ce projet qui analyse les rapports d'erreurs de programmation et fournit des explications détaillées ainsi que des solutions via une interface chatbot interactive.
+
+### Utilisation Rapide
+
+```bash
+# Mode interactif
+python error_analyzer.py
+
+# Analyser un fichier d'erreur
+python error_analyzer.py examples/error_python_1.txt
+
+# Exécuter les tests
+python test_error_analyzer.py
+```
+
+Pour plus de détails, consultez [ERROR_ANALYZER_README.md](ERROR_ANALYZER_README.md).
+
 ## ✨ Fonctionnalités
 
 ### 🎯 Principales Capacités

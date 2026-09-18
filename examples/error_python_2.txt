@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "user_management.py", line 23, in <module>
+    print(user_name)
+NameError: name 'user_name' is not defined
